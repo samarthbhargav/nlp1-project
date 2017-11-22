@@ -60,9 +60,8 @@ if __name__ == '__main__':
         for index, (s, t) in enumerate(TedTalksDataSet("../DeEnItNlRo-DeEnItNlRo/train.tags.en-nl.en",
                                                        "../DeEnItNlRo-DeEnItNlRo/train.tags.en-nl.nl")):
 
-            writer.write(t + "\n\n")
             if is_interesting_sentence(t):
-                # print(t)
+                writer.write(t + "\n\n")
                 verb_count += 1
             count += 1
 
@@ -75,3 +74,4 @@ if __name__ == '__main__':
 
     print(count)
     print(verb_count)
+    ...
