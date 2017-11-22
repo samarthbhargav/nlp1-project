@@ -1,8 +1,12 @@
 import codecs
 
 import re
+import spacy
 
+import time
 from experiment import text_utils
+
+nlp = spacy.load("nl")
 
 
 class TedTalksDataSet:
@@ -37,28 +41,37 @@ class TedTalksDataSet:
                         yield s, t
 
 
-verb_pattern = re.compile(r"(en|d|t)$")
-
-
-def is_ending_with_verb(sentence):
-    tokens = text_utils.split_sentence(text_utils.normalize(sentence))
-    if len(tokens) > 1 and verb_pattern.search(tokens[-1]) is not None:
-        return True
-    if len(tokens) > 2 and verb_pattern.search(tokens[-2]) is not None:
-        return True
-    return False
+def is_interesting_sentence(sentence):
+    doc = nlp(sentence)
+    n = len(doc)
+    if n <= 5 or n > 40:
+        return False
+    for token in list(doc)[::-1]:
+        if token.is_alpha:
+            return token.pos_ == "VERB"
 
 
 if __name__ == '__main__':
+
     count = 0
     verb_count = 0
+    start_time = time.time()
     with open("test.txt", "w") as writer:
-        for s, t in TedTalksDataSet("../DeEnItNlRo-DeEnItNlRo/train.tags.en-nl.en",
-                                    "../DeEnItNlRo-DeEnItNlRo/train.tags.en-nl.nl"):
-            writer.write("{}\n{}\n\n".format(s.strip(), t.strip()))
-            if is_ending_with_verb(t):
+        for index, (s, t) in enumerate(TedTalksDataSet("../DeEnItNlRo-DeEnItNlRo/train.tags.en-nl.en",
+                                                       "../DeEnItNlRo-DeEnItNlRo/train.tags.en-nl.nl")):
+
+            writer.write(t + "\n\n")
+            if is_interesting_sentence(t):
                 # print(t)
                 verb_count += 1
             count += 1
+
+            if verb_count > 100000:
+                break
+
+            if index % 1000 == 0:
+                print(index + 1, " done. Minutes elapsed: ", (time.time() - start_time) / 60, "\t", verb_count,
+                      "found so far!")
+
     print(count)
     print(verb_count)
