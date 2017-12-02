@@ -13,7 +13,7 @@ print(sys.path)
 from opennmt import opts
 from opennmt.onmt import IO
 from opennmt import onmt
-
+from data import *
 
 def report_score(name, score_total, words_total):
     print("%s AVG SCORE: %.4f, %s PPL: %.4f" % (
@@ -49,17 +49,29 @@ def plot_attention(path, source_words, target_words, attention):
     attention = attention.numpy()
     cax = ax.matshow(attention[:, :len(source_words) + 1], cmap='bone')
     fig.colorbar(cax)
+    
 
-    # Set up axes
-    ax.set_xticklabels([''] + source_words +
-                       ['<EOS>'], rotation=90)
-    ax.set_yticklabels([''] + target_words)
+    en_orig_tokens = " ".join(source_words)
+    en_tokens = nlp_en(en_orig_tokens)
+    en_token_pos = []
+    for tok in en_tokens:
+        en_token_pos.append(tok.pos_ + " " + tok.text)
+
+    nl_orig_tokens = " ".join(target_words)
+    nl_tokens = nlp_nl(nl_orig_tokens)
+    nl_token_pos = []
+    for tok in nl_tokens:
+        nl_token_pos.append(tok.pos_ + " " + tok.text)
+
+
+    ax.set_xticklabels([''] + en_token_pos + ['<EOS>'], rotation=90)
+    ax.set_yticklabels([''] + nl_token_pos )
 
     # Show label at every tick
     ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
     ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
 
-    plt.savefig(path, dpi=600)
+    plt.savefig(path, dpi=600, bbox_inches='tight')
 
 
 if __name__ == '__main__':
