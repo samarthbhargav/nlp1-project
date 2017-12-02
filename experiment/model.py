@@ -8,8 +8,8 @@ from itertools import count, takewhile, zip_longest
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
-sys.path.insert(0, os.path.abspath("../opennmt"))
-
+sys.path.insert(0, os.path.abspath("../"))
+print(sys.path)
 from opennmt import opts
 from opennmt.onmt import IO
 from opennmt import onmt
@@ -46,7 +46,8 @@ def plot_attention(path, source_words, target_words, attention):
     print(len(source_words))
     print(len(target_words))
 
-    cax = ax.matshow(attention.numpy(), cmap='bone')
+    attention = attention.numpy()
+    cax = ax.matshow(attention[:, :len(source_words) + 1], cmap='bone')
     fig.colorbar(cax)
 
     # Set up axes
@@ -63,8 +64,8 @@ def plot_attention(path, source_words, target_words, attention):
 
 if __name__ == '__main__':
     ### PARAMs for Model
-    model = "/home/samarth/workspaces/uva/nlp1/nlp1-project/models/ted_sgd_acc_55.43_ppl_12.39_e11.pt"
-    ###
+    model = "../models/ted_sgd_acc_55.43_ppl_12.39_e11.pt"
+    ##
     construct_args(model)
 
     parser = argparse.ArgumentParser(
