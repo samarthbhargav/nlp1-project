@@ -48,7 +48,7 @@ def plot_attention(path, source_words, target_words, attention):
 
     attention = attention.numpy()
     cax = ax.matshow(attention[:, :len(source_words) + 1], cmap='bone')
-    fig.colorbar(cax)
+    fig.colorbar(cax, ticks=[0, 1])
     
 
     en_orig_tokens = " ".join(source_words)
@@ -72,6 +72,7 @@ def plot_attention(path, source_words, target_words, attention):
     ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
 
     plt.savefig(path, dpi=600, bbox_inches='tight')
+
 
 
 if __name__ == '__main__':
