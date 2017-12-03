@@ -18,6 +18,20 @@ def split_sentence(s):
 
 
 if __name__ == '__main__':
-    print(split_sentence(normalize("The name of the person is Pascal (Applause).")))
+    # print(split_sentence(normalize("The name of the person is Pascal (Applause).")))
+    #
+    # print()
 
-    print()
+    english = open("/home/marco/Downloads/nl-en/europarl-v7.nl-en.en","r")
+    englishwrite = open("/home/marco/Downloads/europaleng","w")
+
+    for line in english:
+        # print(line)
+        text = normalize(line)
+        englishwrite.write(text)
+
+    print(englishwrite)
+
+
+    english.close()
+    englishwrite.close()
