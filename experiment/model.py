@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
 sys.path.insert(0, os.path.abspath("../"))
-print(sys.path)
 from opennmt import opts
 from opennmt.onmt import IO
 from opennmt import onmt
@@ -38,13 +37,9 @@ def plot_attention(path, source_words, target_words, attention):
     fig = plt.figure()
     ax = fig.add_subplot(111)
 
-    print(attention)
-    print(len(attention))
 
     attention = attention[0]
 
-    print(len(source_words))
-    print(len(target_words))
 
     attention = attention.numpy()
     cax = ax.matshow(attention[:, :len(source_words) + 1], cmap='bone')
