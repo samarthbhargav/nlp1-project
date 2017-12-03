@@ -10,7 +10,8 @@ if __name__ == '__main__':
             open("./europalENG.txt", "w") as interestingEng, \
             open("/home/marco/Project-NLP/nlp1-project/europalNL", 'r') as dutch, \
             open("./europalNL.txt", "w") as interestingDutch, \
-            open("./europalUNK.txt", "w") as interestingEngUNK:
+            open("./europalENGUNK.txt", "w") as interestingEngUNK, \
+            open("./europalNLUNK.txt", "w") as interestingNLUNK:
         count = 0
 
 
@@ -24,11 +25,22 @@ if __name__ == '__main__':
 
             towrite = []
             for token in list(nlp_en(en_line.strip())):
-                if not token.pos_ == "VERB":
+                if not token.pos_ in {"VERB", "PRON"}:
                     towrite.append("<unk>")
                 else:
                     towrite.append(token.text)
             interestingEngUNK.write(' '.join(towrite) + "\n")
+
+            towrite = []
+            for token in list(nlp_nl(nl_line.strip())):
+                if not token.pos_ in {"VERB", "PRON"}:
+                    towrite.append("<unk>")
+                else:
+                    towrite.append(token.text)
+            interestingNLUNK.write(' '.join(towrite) + "\n")
+
+
+
 
             count += 1
             print(count)
