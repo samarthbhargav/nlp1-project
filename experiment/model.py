@@ -1,18 +1,26 @@
+import numpy as np
 import argparse
 import codecs
 import math
 import os
 import sys
 from itertools import count, takewhile, zip_longest
+from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
 sys.path.insert(0, os.path.abspath("../"))
+
 from opennmt import opts
 from opennmt.onmt import IO
 from opennmt import onmt
 from data import *
+
+nlp_en_notok = spacy.load("en", disable=["tokenizer"])
+nlp_nl_notok = spacy.load("nl", disable=["tokenizer"])
+
+
 
 def report_score(name, score_total, words_total):
     print("%s AVG SCORE: %.4f, %s PPL: %.4f" % (
@@ -28,7 +36,7 @@ def get_src_words(src_indices, index2str):
 
 
 def construct_args(model_path):
-    args = ["-model", model_path, "-src", "en_test.txt"]
+    args = ["-model", model_path, "-src", "europalProcessedEN.txt"]
     sys.argv = sys.argv[:] + args
 
 
@@ -68,7 +76,89 @@ def plot_attention(path, source_words, target_words, attention):
 
     plt.savefig(path, dpi=600, bbox_inches='tight')
 
+class Scorer:
+    def __init__(self, k=3):
+        # k must be odd
+        assert k % 2 == 1
 
+        # total number of sentences
+        self.total = 0
+        # number of perfect verb alignments
+        self.perfect_verb_match = 0 
+        # number of top k verb matches
+        self.top_k_verb_match = 0
+        # confusion matrix for perfect verb alignments
+        # structure is POS - count
+        self.conf_matrix = defaultdict(int) 
+        
+        self.k = k
+
+    def _find_verb_nl(self, doc):
+        """ 
+        Finds and returns the position of the verb in the sentence
+        """
+        for index, token in reversed(list(enumerate(doc))):
+            if token.pos_ == "VERB":
+                return index
+
+    def _find_verb_en(self, doc):
+        """
+        Finds and returns the position of the first verb in the sentence
+        """
+        for index, token in list(enumerate(doc)):
+            if token.pos_ == "VERB":
+                return index
+
+    def spacy_fix(self, sentence):
+        return sentence.replace("<unk>", "UNK")
+
+    def accumulate_scores(self, source_sentence, target_sentence, attention):
+        attention = attention[0]
+        
+        # fix so that spacy doesn't tokenize <unk> into [< , UNK, >]
+        source_sentence = self.spacy_fix(source_sentence)
+        target_sentence = self.spacy_fix(target_sentence)
+        
+        en_doc = nlp_en(source_sentence)
+        en_doc = [tok for tok in en_doc]
+        nl_doc = nlp_nl(target_sentence)
+        nl_doc = [tok for tok in nl_doc]
+        
+        # find the ending verb
+        verb_index_nl = self._find_verb_nl(nl_doc)
+        verb_index_en = self._find_verb_en(en_doc)
+        
+        print("\tSentence: {}\n\tTranslation:{}".format([(tok.text, tok.pos_) for
+            tok in en_doc],[(tok.text, tok.pos_) for tok in nl_doc]))
+
+        print("\tSource Verb: {}\n\tTarget Verb:{}".format(en_doc[verb_index_en],
+            nl_doc[verb_index_nl]))
+
+        verb_attention = attention[verb_index_nl].numpy()
+         
+        pred_max_attention = verb_attention.argmax()
+
+        # check for perfect match
+        if pred_max_attention == verb_index_en:
+            print("\tPerfect Match!")
+            self.perfect_verb_match += 1
+            return 
+
+        print("\tNot a perfect match. Instead: {}".format(en_doc[pred_max_attention]))
+        
+        # update confusion matrix
+        self.conf_matrix[en_doc[pred_max_attention].pos_] += 1
+        k = self.k
+        # check if it's a k/2 sized window
+        start = min(0, (k-1)//2 + pred_max_attention)
+        end = max(len(en_doc), (k-1)//2 + pred_max_attention)
+        allowed_range = np.arange(start, end)
+
+        if pred_max_attention in allowed_range:
+            print("\tIt's in the allowed range")
+            self.top_k_verb_match += 1
+        print("\tIt's not in the allowed range :(")
+        
 
 if __name__ == '__main__':
     ### PARAMs for Model
@@ -106,6 +196,10 @@ if __name__ == '__main__':
 
     counter = count(1)
     sentence = 0
+
+    scorer_3 = Scorer(3)
+    scorer_5 = Scorer(5)
+
     for batch in test_data:
         pred_batch, gold_batch, pred_scores, gold_scores, attn, src \
             = translator.translate(batch, data)
@@ -147,5 +241,8 @@ if __name__ == '__main__':
             plot_attention("attentions/{}.png".format(sentence),
                            words.split(), best_pred.split(), attn[index])
             sentence += 1
+
+            scorer_3.accumulate_scores(words, best_pred, attn[index])
+            scorer_5.accumulate_scores(words, best_pred, attn[index])
 
     report_score('PRED', pred_score_total, pred_words_total)

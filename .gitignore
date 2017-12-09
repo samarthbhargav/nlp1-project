@@ -1,3 +1,4 @@
+*.swp
 pip-selfcheck.json
 .idea/
 bin/
