@@ -77,28 +77,42 @@ def plot_attention(path, source_words, target_words, attention):
     plt.savefig(path, dpi=600, bbox_inches='tight')
 
 class Scorer:
-    def __init__(self, k=3):
+    def __init__(self, k=None):
+        if k is None:
+            k = [3]
+        
         # k must be odd
-        assert k % 2 == 1
-
-        # total number of sentences
-        self.total = 0
-        # number of perfect verb alignments
-        self.perfect_verb_match = 0 
-        # number of top k verb matches
-        self.top_k_verb_match = 0
-        # confusion matrix for perfect verb alignments
-        # structure is POS - count
-        self.conf_matrix = defaultdict(int) 
+        assert all(_ % 2 != 0 for _ in k)
         
         self.k = k
+        
+        # total number of sentences
+        self.total = 0
+        
+        # number of perfect verb alignments
+        self.perfect_verb_match_pos = 0 
+        self.perfect_verb_match_dep = 0
+        
+        # number of top k verb matches
+        self.top_k_verb_match_dep = defaultdict(int)
+        self.top_k_verb_match_pos = defaultdict(int)
 
-    def _find_verb_nl(self, doc):
+        # confusion matrix for perfect verb alignments
+        # structure is POS - count
+        self.conf_matrix_dep = defaultdict(int) 
+        self.conf_matrix_pos = defaultdict(int)
+
+    def _find_verb_nl_pos(self, doc):
         """ 
         Finds and returns the position of the verb in the sentence
         """
         for index, token in reversed(list(enumerate(doc))):
             if token.pos_ == "VERB":
+                return index
+    
+    def _find_verb_nl_dep(self, doc):
+        for index, token in reversed(list(enumerate(doc))):
+            if token.dep_ == "ROOT":
                 return index
 
     def _find_verb_en(self, doc):
@@ -106,11 +120,11 @@ class Scorer:
         Finds and returns the position of the first verb in the sentence
         """
         for index, token in list(enumerate(doc)):
-            if token.pos_ == "VERB":
+            if token.dep_ == "ROOT":
                 return index
 
     def spacy_fix(self, sentence):
-        return sentence.replace("<unk>", "UNK")
+        return sentence.replace("<unk>", "UNK").replace("&apos;", "'")
 
     def accumulate_scores(self, source_sentence, target_sentence, attention):
         attention = attention[0]
@@ -124,41 +138,94 @@ class Scorer:
         nl_doc = nlp_nl(target_sentence)
         nl_doc = [tok for tok in nl_doc]
         
-        # find the ending verb
-        verb_index_nl = self._find_verb_nl(nl_doc)
+        print("\tSentence: {}\n\tTranslation:{}".format([(tok.text, tok.pos_,
+            tok.dep_) for tok in en_doc],[(tok.text, tok.pos_, tok.dep_) for tok in nl_doc]))
+
         verb_index_en = self._find_verb_en(en_doc)
         
-        print("\tSentence: {}\n\tTranslation:{}".format([(tok.text, tok.pos_) for
-            tok in en_doc],[(tok.text, tok.pos_) for tok in nl_doc]))
+        print("\t*** POS ***")
+        # find the ending verb, using POS first
+        verb_index_nl = self._find_verb_nl_pos(nl_doc)
+        
 
         print("\tSource Verb: {}\n\tTarget Verb:{}".format(en_doc[verb_index_en],
             nl_doc[verb_index_nl]))
 
-        verb_attention = attention[verb_index_nl].numpy()
+        verb_attention = attention[:, verb_index_nl].numpy()
          
         pred_max_attention = verb_attention.argmax()
+        if len(en_doc) < pred_max_attention:
+            print("\tIncorrect Dimensions :(")
+            return
+
+        print("\tEnglish Index: {}, NL Actual Index: {}, Predicted Index:{}\n\tAttention: {}".format(verb_index_en, 
+            verb_index_nl, pred_max_attention, verb_attention))
 
         # check for perfect match
         if pred_max_attention == verb_index_en:
             print("\tPerfect Match!")
-            self.perfect_verb_match += 1
-            return 
+            self.perfect_verb_match_pos += 1
+        else:
+            print("\tNot a perfect match. Instead: {}".format(en_doc[pred_max_attention]))
+            
+            # update confusion matrix
+            self.conf_matrix_pos[en_doc[pred_max_attention].pos_] += 1
 
-        print("\tNot a perfect match. Instead: {}".format(en_doc[pred_max_attention]))
+            for k in self.k:
+                print("\tFor window: {}".format(k))
+                # check if it's a k/2 sized window
+                start = max(0, pred_max_attention - (k-1)//2)
+                end = min(len(en_doc), pred_max_attention + (k-1)//2 + 1)
+                allowed_range = np.arange(start, end)
+                print("\t\tAllowed Range: {}".format(allowed_range))
+                if verb_index_en in allowed_range:
+                    print("\t\tIt's in the allowed range")
+                    self.top_k_verb_match_pos[k] += 1
+                else:
+                    print("\t\tIt's not in the allowed range :(")
         
-        # update confusion matrix
-        self.conf_matrix[en_doc[pred_max_attention].pos_] += 1
-        k = self.k
-        # check if it's a k/2 sized window
-        start = min(0, (k-1)//2 + pred_max_attention)
-        end = max(len(en_doc), (k-1)//2 + pred_max_attention)
-        allowed_range = np.arange(start, end)
+        verb_index_nl = self._find_verb_nl_dep(nl_doc)
 
-        if pred_max_attention in allowed_range:
-            print("\tIt's in the allowed range")
-            self.top_k_verb_match += 1
-        print("\tIt's not in the allowed range :(")
+        print("\t*** DEP ***")
+        # find the ending verb, using POS first
+        verb_index_nl = self._find_verb_nl_dep(nl_doc)
         
+
+        print("\tSource Verb: {}\n\tTarget Verb:{}".format(en_doc[verb_index_en],
+            nl_doc[verb_index_nl]))
+
+        verb_attention = attention[:, verb_index_nl].numpy()
+         
+        pred_max_attention = verb_attention.argmax()
+        print("\tEnglish Index: {}, NL Actual Index: {}, Predicted Index:{}\n\tAttention: {}".format(verb_index_en, 
+            verb_index_nl, pred_max_attention, verb_attention))
+
+        # check for perfect match
+        if pred_max_attention == verb_index_en:
+            print("\tPerfect Match!")
+            self.perfect_verb_match_dep += 1
+        else:
+            print("\tNot a perfect match. Instead: {}".format(en_doc[pred_max_attention]))
+            
+            # update confusion matrix
+            self.conf_matrix_dep[en_doc[pred_max_attention].pos_] += 1
+
+            for k in self.k:
+                print("\tFor window: {}".format(k))
+                # check if it's a k/2 sized window
+                start = max(0, pred_max_attention - (k-1)//2)
+                end = min(len(en_doc), pred_max_attention + (k-1)//2 + 1)
+                allowed_range = np.arange(start, end)
+                print("\t\tAllowed Range: {}".format(allowed_range))
+
+                if verb_index_en in allowed_range:
+                    print("\t\tIt's in the allowed range")
+                    self.top_k_verb_match_dep[k] += 1
+                else:
+                    print("\t\tIt's not in the allowed range :(")
+        print("\t**********************")
+        
+        self.total += 1
 
 if __name__ == '__main__':
     ### PARAMs for Model
@@ -197,8 +264,7 @@ if __name__ == '__main__':
     counter = count(1)
     sentence = 0
 
-    scorer_3 = Scorer(3)
-    scorer_5 = Scorer(5)
+    scorer = Scorer([3, 5, 7])
 
     for batch in test_data:
         pred_batch, gold_batch, pred_scores, gold_scores, attn, src \
@@ -238,11 +304,20 @@ if __name__ == '__main__':
                               (sent_number, best_pred), 'UTF-8'))
             print("PRED SCORE: %.4f" % best_score)
 
-            plot_attention("attentions/{}.png".format(sentence),
+            plot_attention("attentions/{}.png".format(sentence + 1),
                            words.split(), best_pred.split(), attn[index])
             sentence += 1
-
-            scorer_3.accumulate_scores(words, best_pred, attn[index])
-            scorer_5.accumulate_scores(words, best_pred, attn[index])
+            try:
+                scorer.accumulate_scores(words, best_pred, attn[index])
+            except:
+                ...
+        if sentence > 500:
+            break
 
     report_score('PRED', pred_score_total, pred_words_total)
+    
+    import json
+    print(json.dumps(scorer.__dict__, indent=2))
+
+    with open("results.json", "w") as writer:
+        writer.write(json.dumps(scorer.__dict__, indent=2))
