@@ -99,7 +99,7 @@ def get_parallel_test(source_lang_file, target_lang_file):
                 count += 1
                 yield (sourge_seg.text.strip(), target_seg.text.strip())
 
-    print("Total number of sentences: {}".format(count))
+    print("Total number of sentences: {}".format(count) + "\n")
 
 
 def read_train_file():
@@ -136,6 +136,7 @@ def filter_interesting(tup):
 if __name__ == '__main__':
     with open("en_test.txt", "w") as en_writer, open("nl_test.txt", "w") as nl_writer:
 
+        #print("test set: ")
         gen = get_parallel_test("../DeEnItNlRo-DeEnItNlRo/IWSLT17.TED.tst2010.en-nl.en.xml",
                                 "../DeEnItNlRo-DeEnItNlRo/IWSLT17.TED.tst2010.en-nl.nl.xml")
         filtered = filter(filter_interesting, gen)
@@ -145,6 +146,7 @@ if __name__ == '__main__':
             en_writer.write(to_onmt_format(nlp_en(s)) + "\n")
             nl_writer.write(to_onmt_format(nlp_nl(t)) + "\n")
 
+        #print("dev set: ")
         gen = get_parallel_test("../DeEnItNlRo-DeEnItNlRo/IWSLT17.TED.dev2010.en-nl.en.xml",
                                 "../DeEnItNlRo-DeEnItNlRo/IWSLT17.TED.dev2010.en-nl.nl.xml")
 
@@ -154,4 +156,5 @@ if __name__ == '__main__':
             en_writer.write(to_onmt_format(nlp_en(s)) + "\n")
             nl_writer.write(to_onmt_format(nlp_nl(t)) + "\n")
 
+        #print("filtering the interesting sentences: ")
         print(count)

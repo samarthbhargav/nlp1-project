@@ -6,9 +6,9 @@ if __name__ == '__main__':
 
     limit = 100
 
-    with open("/home/marco/Project-NLP/nlp1-project/europalENG", "r") as english, \
+    with open("./europalENG", "r") as english, \
             open("./europalENG.txt", "w") as interestingEng, \
-            open("/home/marco/Project-NLP/nlp1-project/europalNL", 'r') as dutch, \
+            open("./europalNL", 'r') as dutch, \
             open("./europalNL.txt", "w") as interestingDutch, \
             open("./europalENGUNK.txt", "w") as interestingEngUNK, \
             open("./europalNLUNK.txt", "w") as interestingNLUNK:

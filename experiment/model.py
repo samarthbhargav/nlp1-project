@@ -52,9 +52,8 @@ def plot_attention(path, source_words, target_words, attention):
 
 
     attention = attention.numpy()
-    cax = ax.matshow(attention[:, :len(source_words) + 1], cmap='bone')
+    cax = ax.matshow(attention[:, :len(source_words) + 1], cmap='RdPu')
     fig.colorbar(cax, ticks=[0, 1])
-    
 
     en_orig_tokens = " ".join(source_words)
     en_tokens = nlp_en(en_orig_tokens)
