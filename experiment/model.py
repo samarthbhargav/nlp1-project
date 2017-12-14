@@ -311,6 +311,7 @@ if __name__ == '__main__':
                 scorer.accumulate_scores(words, best_pred, attn[index])
             except:
                 ...
+            print("\n\n\n")
         if sentence > 500:
             break
 
