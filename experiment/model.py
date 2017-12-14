@@ -7,6 +7,8 @@ import sys
 from itertools import count, takewhile, zip_longest
 from collections import defaultdict
 
+import utils
+
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
@@ -126,20 +128,34 @@ class Scorer:
     def spacy_fix(self, sentence):
         return sentence.replace("<unk>", "UNK").replace("&apos;", "'")
 
-    def accumulate_scores(self, source_sentence, target_sentence, attention):
+    def accumulate_scores(self, source_sentence, target_sentence, true_sentence,
+            attention, jaccard_threshold=0.3):
         attention = attention[0]
         
         # fix so that spacy doesn't tokenize <unk> into [< , UNK, >]
         source_sentence = self.spacy_fix(source_sentence)
         target_sentence = self.spacy_fix(target_sentence)
-        
+        true_sentence = self.spacy_fix(true_sentence)
+
         en_doc = nlp_en(source_sentence)
         en_doc = [tok for tok in en_doc]
         nl_doc = nlp_nl(target_sentence)
         nl_doc = [tok for tok in nl_doc]
-        
-        print("\tSentence: {}\n\tTranslation:{}".format([(tok.text, tok.pos_,
-            tok.dep_) for tok in en_doc],[(tok.text, tok.pos_, tok.dep_) for tok in nl_doc]))
+        true_nl_doc = nlp_nl(true_sentence)
+        true_nl_doc = [tok for tok in true_nl_doc]
+
+        print("\tSentence: {}\n\tTranslation:{}\n\tActual Translation:{}".format([(tok.text, tok.pos_,
+            tok.dep_) for tok in en_doc],[(tok.text, tok.pos_, tok.dep_) for tok in nl_doc], 
+            [(tok.text, tok.pos_, tok.dep_) for tok in true_nl_doc]))
+
+        jaccard_index = utils.jaccard_index([tok.text for tok in nl_doc],
+                [tok.text for tok in true_nl_doc])
+
+        print("\tJaccard Index: {}".format(jaccard_index))
+
+        if jaccard_index < jaccard_threshold:
+            print("\tJaccard Index not high enough. Not considering this sentence for scoring")
+            return 
 
         verb_index_en = self._find_verb_en(en_doc)
         
@@ -227,6 +243,14 @@ class Scorer:
         
         self.total += 1
 
+
+def read_true_nl():
+    true_nl_sentences = []
+    with codecs.open("europalProcessedNL.txt", "r", "utf-8") as reader:
+        for line in reader:
+            true_nl_sentences.append(line)
+    return true_nl_sentences
+
 if __name__ == '__main__':
     ### PARAMs for Model
     model = "../models/ted_sgd_acc_55.43_ppl_12.39_e11.pt"
@@ -265,6 +289,8 @@ if __name__ == '__main__':
     sentence = 0
 
     scorer = Scorer([3, 5, 7])
+
+    true_nl_sentences = read_true_nl()
 
     for batch in test_data:
         pred_batch, gold_batch, pred_scores, gold_scores, attn, src \
@@ -306,12 +332,15 @@ if __name__ == '__main__':
 
             plot_attention("attentions/{}.png".format(sentence + 1),
                            words.split(), best_pred.split(), attn[index])
-            sentence += 1
             try:
-                scorer.accumulate_scores(words, best_pred, attn[index])
+                scorer.accumulate_scores(words, best_pred,
+                        true_nl_sentences[sentence], attn[index])
             except:
                 ...
             print("\n\n\n")
+
+
+            sentence += 1
         if sentence > 500:
             break
 
