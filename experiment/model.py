@@ -170,15 +170,15 @@ class Scorer:
         print("\tSource Verb: {}\n\tTarget Verb:{}".format(en_doc[verb_index_en],
             nl_doc[verb_index_nl]))
 
-        verb_attention = attention[:, verb_index_nl].numpy()
+        verb_attention = attention[verb_index_nl, :].numpy()
          
         pred_max_attention = verb_attention.argmax()
         if len(en_doc) < pred_max_attention:
             print("\tIncorrect Dimensions :(")
             return
 
-        print("\tEnglish Index: {}, NL Actual Index: {}, Predicted Index:{}\n\tAttention: {}".format(verb_index_en, 
-            verb_index_nl, pred_max_attention, verb_attention))
+        print("\tNL Actual Index: {}, English Index: {}, Predicted Index:{}\n\tAttention: {}".format(verb_index_nl, 
+            verb_index_en, pred_max_attention, verb_attention))
 
         # check for perfect match
         if pred_max_attention == verb_index_en:
@@ -344,6 +344,10 @@ if __name__ == '__main__':
 
 
             sentence += 1
+
+            if sentence > 500:
+                break
+
         if sentence > 500:
             break
 
