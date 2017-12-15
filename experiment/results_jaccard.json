@@ -1,0 +1,48 @@
+{
+  "top_k_verb_match_pos": {
+    "3": 27,
+    "5": 41,
+    "7": 50
+  },
+  "k": [
+    3,
+    5,
+    7
+  ],
+  "perfect_verb_match_pos": 7,
+  "perfect_verb_match_dep": 38,
+  "top_k_verb_match_dep": {
+    "3": 80,
+    "5": 111,
+    "7": 121
+  },
+  "conf_matrix_dep": {
+    "VERB": 91,
+    "CCONJ": 1,
+    "ADV": 4,
+    "PUNCT": 3,
+    "NUM": 1,
+    "PART": 5,
+    "ADP": 4,
+    "PROPN": 2,
+    "NOUN": 6,
+    "DET": 15,
+    "ADJ": 10,
+    "PRON": 5
+  },
+  "conf_matrix_pos": {
+    "VERB": 55,
+    "CCONJ": 3,
+    "ADV": 13,
+    "PUNCT": 11,
+    "NUM": 1,
+    "PART": 8,
+    "ADP": 15,
+    "PROPN": 5,
+    "NOUN": 20,
+    "DET": 21,
+    "ADJ": 17,
+    "PRON": 9
+  },
+  "total": 185
+}

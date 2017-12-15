@@ -1,0 +1,48 @@
+{
+  "conf_matrix_pos": {
+    "ADV": 28,
+    "PUNCT": 19,
+    "NOUN": 48,
+    "DET": 44,
+    "PRON": 28,
+    "PART": 18,
+    "ADJ": 33,
+    "ADP": 33,
+    "NUM": 3,
+    "CCONJ": 12,
+    "PROPN": 18,
+    "VERB": 148
+  },
+  "conf_matrix_dep": {
+    "ADV": 12,
+    "PUNCT": 8,
+    "NOUN": 14,
+    "DET": 29,
+    "PRON": 11,
+    "PART": 12,
+    "ADJ": 18,
+    "ADP": 19,
+    "NUM": 3,
+    "CCONJ": 2,
+    "PROPN": 6,
+    "VERB": 239
+  },
+  "k": [
+    3,
+    5,
+    7
+  ],
+  "top_k_verb_match_pos": {
+    "3": 68,
+    "5": 107,
+    "7": 127
+  },
+  "top_k_verb_match_dep": {
+    "3": 219,
+    "5": 284,
+    "7": 307
+  },
+  "perfect_verb_match_dep": 81,
+  "perfect_verb_match_pos": 25,
+  "total": 454
+}
