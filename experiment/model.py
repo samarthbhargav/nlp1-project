@@ -53,16 +53,16 @@ def plot_attention(path, source_words, target_words, attention):
 
     attention = attention.numpy()
     cax = ax.matshow(attention[:, :len(source_words) + 1], cmap='RdPu')
-    fig.colorbar(cax, ticks=[0, 1])
+    fig.colorbar(cax, ticks=[0, 1]  )
 
     en_orig_tokens = " ".join(source_words)
-    en_tokens = nlp_en(en_orig_tokens)
+    en_tokens = nlp_en(spacy_fix(en_orig_tokens))
     en_token_pos = []
     for tok in en_tokens:
         en_token_pos.append(tok.pos_ + " " + tok.text)
 
     nl_orig_tokens = " ".join(target_words)
-    nl_tokens = nlp_nl(nl_orig_tokens)
+    nl_tokens = nlp_nl(spacy_fix(nl_orig_tokens))
     nl_token_pos = []
     for tok in nl_tokens:
         nl_token_pos.append(tok.pos_ + " " + tok.text)
@@ -76,6 +76,10 @@ def plot_attention(path, source_words, target_words, attention):
     ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
 
     plt.savefig(path, dpi=600, bbox_inches='tight')
+
+def spacy_fix(sentence):
+        return sentence.replace("<unk>", "UNK").replace("&apos;", "'")
+
 
 class Scorer:
     def __init__(self, k=None):
